@@ -1,39 +1,47 @@
 version: '3.8'
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: laravel_app
-    volumes:
-      - .:/var/www/html
-    depends_on:
-      - db
-
+  # Service pour NGINX
   nginx:
-    image: nginx:latest
-    container_name: nginx
+    image: nginx:1.22-alpine
     ports:
-      - "80:80"  # Expose le port 80 pour HTTP
+      - "8008:80"
     volumes:
-      - .:/var/www/html
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./:/code
+      # - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - app
 
-  db:
-    image: mysql:8.0
-    container_name: mysql_db
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+  # Service pour PHP-FPM (Application Laravel)
+  app:
+    image: php:8.1-fpm
+    container_name: app
+    working_dir: /var/www/html
     volumes:
-      - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
+      - ./:/code
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=127.0.0.1
+      - DB_PORT=3306
+      - DB_DATABASE=portfolio
+      - DB_USERNAME=root
+      - DB_PASSWORD=
+    depends_on:
+      - db
 
+  # Service pour la base de données MySQL
+  db:
+    image: mysql:5.7
+    container_name: db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 
+      MYSQL_DATABASE: portfolio
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 
+    volumes:
+      - dbdata:/var/lib/mysql
+
+# Définition des volumes
 volumes:
-  mysql_data:
+  dbdata:
